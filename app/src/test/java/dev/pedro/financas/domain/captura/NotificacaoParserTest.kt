@@ -41,6 +41,33 @@ class NotificacaoParserTest {
         assertEquals("PIX de Beltrano Souza", r.descricao)
     }
 
+    // ---- Fixtures com estrutura REAL capturada no S24 Ultra em 20/07/2026.
+    // Nome e CPF anonimizados; formato do texto é idêntico ao original. ----
+
+    @Test
+    fun `fixture real - pix enviado`() {
+        val r = NotificacaoParser.parse(
+            "Feito. Pix enviado",
+            "Você enviou R$ 0,01 para MARIA TESTE, CPF XXX.000.000-XX.",
+        )
+        r as ResultadoParse.Reconhecido
+        assertEquals(Tipo.DEBITO, r.tipo)
+        assertEquals(1, r.valorCentavos)
+        assertEquals("PIX para MARIA TESTE", r.descricao)
+    }
+
+    @Test
+    fun `fixture real - pix recebido`() {
+        val r = NotificacaoParser.parse(
+            "Pix recebido",
+            "Você recebeu R$ 10,00 de MARIA TESTE, CPF XXX.000.000-XX.",
+        )
+        r as ResultadoParse.Reconhecido
+        assertEquals(Tipo.CREDITO, r.tipo)
+        assertEquals(1000, r.valorCentavos)
+        assertEquals("PIX de MARIA TESTE", r.descricao)
+    }
+
     @Test
     fun `valor com milhar parseia certo`() {
         assertEquals(123456, NotificacaoParser.extrairValorCentavos("R$ 1.234,56"))
