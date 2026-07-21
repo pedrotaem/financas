@@ -1,6 +1,6 @@
 # Spec 001 — Captura de notificações do Itaú
 
-**Status:** Rascunho — aguardando aprovação
+**Status:** Implementada e validada em produção (20/07/2026) — PIX enviado e recebido testados com transações reais no S24 Ultra; parser acertou ambos. **Pendente:** calibrar regex de compra no cartão (sem texto real ainda; fallback de captura bruta cobre até lá)
 **Contexto:** Captura
 **Depende de:** Spec 000
 

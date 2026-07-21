@@ -1,6 +1,6 @@
 # Spec 003 — Navegação e Dashboard
 
-**Status:** Aprovada (decisões do usuário em 20/07/2026)
+**Status:** Implementada e validada no aparelho (20/07/2026) — dashboard, navegação, donut, FAB e categorização funcionando
 **Contexto:** UI
 **Depende de:** Spec 000, 001
 

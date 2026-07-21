@@ -18,6 +18,9 @@ captures/
 secrets.properties
 api_keys*
 
+# Notas locais com dados sensíveis (textos reais de notificação, PII)
+APRENDIZADOS.md
+
 # OS
 .DS_Store
 Thumbs.db

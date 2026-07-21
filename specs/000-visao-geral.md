@@ -1,6 +1,6 @@
 # Spec 000 — Visão Geral e Modelo de Domínio
 
-**Status:** Rascunho — aguardando aprovação
+**Status:** Implementada (20/07/2026) — domínio, camadas e scaffold em produção no aparelho
 **App:** Planejamento e acompanhamento financeiro pessoal (open source)
 **Plataforma:** Android nativo (Kotlin), alvo: Samsung S24 Ultra (Android 14+)
 
