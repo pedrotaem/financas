@@ -25,4 +25,4 @@ Projeto segue **spec-driven design** + **DDD**. Toda feature nasce como spec em 
 
 ## Licença
 
-MIT (a definir)
+[MIT](LICENSE)
