@@ -2,8 +2,10 @@ package dev.pedro.financas.ui.telas
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
@@ -43,6 +45,8 @@ fun LancamentoDialog(
     valorInicial: String = "",
     descricaoInicial: String = "",
     categoriaInicial: Categoria? = null,
+    /** Exibe o botão Excluir (edição de lançamento existente). */
+    onExcluir: (() -> Unit)? = null,
 ) {
     var tipo by remember { mutableStateOf(tipoInicial) }
     var valorTexto by remember { mutableStateOf(valorInicial) }
@@ -113,7 +117,14 @@ fun LancamentoDialog(
             ) { Text("Salvar") }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancelar") }
+            Row {
+                onExcluir?.let {
+                    TextButton(onClick = it) {
+                        Text("Excluir", color = MaterialTheme.colorScheme.error)
+                    }
+                }
+                TextButton(onClick = onDismiss) { Text("Cancelar") }
+            }
         },
     )
 }

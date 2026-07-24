@@ -120,6 +120,7 @@ fun AppFinancas(viewModel: FinancasViewModel) {
                     onRejeitar = viewModel::rejeitar,
                     onCategorizar = viewModel::categorizar,
                     onEditar = viewModel::editar,
+                    onExcluir = viewModel::excluir,
                     onDescartarCaptura = viewModel::descartarCaptura,
                     onAdicionarDeCaptura = viewModel::adicionarDeCaptura,
                 )

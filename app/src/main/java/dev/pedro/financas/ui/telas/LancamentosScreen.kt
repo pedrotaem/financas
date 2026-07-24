@@ -48,6 +48,7 @@ fun LancamentosScreen(
     onRejeitar: (Lancamento) -> Unit,
     onCategorizar: (Lancamento, Categoria) -> Unit,
     onEditar: (Lancamento, Tipo, Long, String, Categoria?) -> Unit,
+    onExcluir: (Lancamento) -> Unit,
     onDescartarCaptura: (CapturaBruta) -> Unit,
     onAdicionarDeCaptura: (CapturaBruta, Tipo, Long, String, Categoria?) -> Unit,
 ) {
@@ -109,6 +110,10 @@ fun LancamentosScreen(
             onDismiss = { emEdicao = null },
             onSalvar = { tipo, centavos, descricao, categoria ->
                 onEditar(l, tipo, centavos, descricao, categoria)
+                emEdicao = null
+            },
+            onExcluir = {
+                onExcluir(l)
                 emEdicao = null
             },
         )

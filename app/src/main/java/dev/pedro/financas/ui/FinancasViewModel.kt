@@ -77,8 +77,10 @@ class FinancasViewModel(
 
     fun confirmar(l: Lancamento) = viewModelScope.launch { lancamentoRepo.salvar(l.confirmar()) }
 
-    /** Spec 004, regra 1: exclusão definitiva; dedup impede recaptura. */
-    fun rejeitar(l: Lancamento) = viewModelScope.launch { lancamentoRepo.excluir(l.id) }
+    /** Exclusão definitiva; dedup impede recaptura (spec 004, regra 1). */
+    fun excluir(l: Lancamento) = viewModelScope.launch { lancamentoRepo.excluir(l.id) }
+
+    fun rejeitar(l: Lancamento) = excluir(l)
 
     /** Spec 004, regra 2: edição preserva id, dataHora, origem, status e auditoria. */
     fun editar(original: Lancamento, tipo: Tipo, valorCentavos: Long, descricao: String, categoria: Categoria?) =
