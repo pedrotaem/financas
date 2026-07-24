@@ -66,6 +66,7 @@ val CORES_CATEGORIA_CLARO: Map<Categoria?, Color> = mapOf(
     Categoria.LAZER to Color(0xFF7B1FA2),
     Categoria.VESTUARIO to Color(0xFF00838F),
     Categoria.CASA to Color(0xFF558B2F),
+    Categoria.EDUCACAO to Color(0xFF303F9F),
     Categoria.OUTROS to Color(0xFF546E7A),
     null to Color(0xFF9E9E9E),
 )
@@ -79,6 +80,7 @@ val CORES_CATEGORIA_ESCURO: Map<Categoria?, Color> = mapOf(
     Categoria.LAZER to Color(0xFFCE93D8),
     Categoria.VESTUARIO to Color(0xFF4DD0E1),
     Categoria.CASA to Color(0xFFAED581),
+    Categoria.EDUCACAO to Color(0xFF9FA8DA),
     Categoria.OUTROS to Color(0xFF90A4AE),
     null to Color(0xFFBDBDBD),
 )
@@ -100,6 +102,7 @@ fun Categoria?.rotulo(): String = when (this) {
     Categoria.LAZER -> "Lazer"
     Categoria.VESTUARIO -> "Vestuário"
     Categoria.CASA -> "Casa"
+    Categoria.EDUCACAO -> "Educação"
     Categoria.OUTROS -> "Outros"
 }
 
