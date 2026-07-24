@@ -20,6 +20,9 @@ class RoomLancamentoRepository(private val dao: LancamentoDao) : LancamentoRepos
     override suspend fun buscar(id: LancamentoId): Lancamento? =
         dao.buscar(id.valor)?.paraDominio()
 
+    override suspend fun buscarFuturos(): List<Lancamento> =
+        dao.buscarFuturos().map { it.paraDominio() }
+
     override suspend fun salvar(lancamento: Lancamento) =
         dao.salvar(LancamentoEntity.de(lancamento))
 

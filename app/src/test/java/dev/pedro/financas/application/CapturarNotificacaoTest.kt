@@ -22,7 +22,11 @@ class CapturarNotificacaoTest {
         val salvos = mutableListOf<Lancamento>()
         override fun observarTodos(): Flow<List<Lancamento>> = flowOf(salvos)
         override suspend fun buscar(id: LancamentoId) = salvos.find { it.id == id }
-        override suspend fun salvar(lancamento: Lancamento) { salvos += lancamento }
+        override suspend fun buscarFuturos() = salvos.filter { it.status == dev.pedro.financas.domain.Status.FUTURO }
+        override suspend fun salvar(lancamento: Lancamento) {
+            salvos.removeAll { it.id == lancamento.id }
+            salvos += lancamento
+        }
         override suspend fun excluir(id: LancamentoId) { salvos.removeAll { it.id == id } }
     }
 

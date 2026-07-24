@@ -1,7 +1,11 @@
 package dev.pedro.financas.ui.telas
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,6 +18,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -49,6 +57,33 @@ fun AjustesScreen(
                     Button(onClick = {
                         context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
                     }) { Text("Conceder acesso") }
+                }
+            }
+        }
+
+        // Spec 007: captura de SMS de contas (Claro/Vivo)
+        var temSms by remember {
+            mutableStateOf(
+                context.checkSelfPermission(Manifest.permission.RECEIVE_SMS) ==
+                    PackageManager.PERMISSION_GRANTED
+            )
+        }
+        val pedirSms = rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { concedida -> temSms = concedida }
+
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Captura de SMS", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    if (temSms) "Ativa — pagamentos de contas Claro e Vivo são capturados."
+                    else "Inativa — conceda acesso para capturar pagamentos de contas Claro e Vivo.",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                if (!temSms) {
+                    Button(onClick = { pedirSms.launch(Manifest.permission.RECEIVE_SMS) }) {
+                        Text("Conceder acesso")
+                    }
                 }
             }
         }

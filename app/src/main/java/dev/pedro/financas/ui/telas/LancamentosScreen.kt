@@ -40,12 +40,14 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 private val FORMATO_DATA = DateTimeFormatter.ofPattern("dd/MM HH:mm")
+private val FORMATO_VENCIMENTO = DateTimeFormatter.ofPattern("dd/MM")
 
 @Composable
 fun LancamentosScreen(
     estado: EstadoUi,
     onConfirmar: (Lancamento) -> Unit,
     onRejeitar: (Lancamento) -> Unit,
+    onEfetivar: (Lancamento) -> Unit,
     onCategorizar: (Lancamento, Categoria) -> Unit,
     onEditar: (Lancamento, Tipo, Long, String, Categoria?) -> Unit,
     onExcluir: (Lancamento) -> Unit,
@@ -78,6 +80,26 @@ fun LancamentosScreen(
             }
         }
 
+        if (estado.lancamentosFuturos.isNotEmpty()) {
+            item {
+                Text(
+                    "Futuros (${estado.lancamentosFuturos.size})",
+                    style = MaterialTheme.typography.titleMedium,
+                )
+            }
+            items(estado.lancamentosFuturos, key = { "futuro-${it.id.valor}" }) { l ->
+                CartaoLancamento(
+                    l,
+                    oculto = estado.saldoOculto,
+                    onEditar = { emEdicao = l },
+                    onConfirmar = { onConfirmar(l) },
+                    onRejeitar = { onRejeitar(l) },
+                    onEfetivar = { onEfetivar(l) },
+                    onCategorizar = { onCategorizar(l, it) },
+                )
+            }
+        }
+
         item { Text("Lançamentos do mês", style = MaterialTheme.typography.titleMedium) }
 
         if (estado.lancamentosDoMes.isEmpty()) {
@@ -95,6 +117,7 @@ fun LancamentosScreen(
                 onEditar = { emEdicao = l },
                 onConfirmar = { onConfirmar(l) },
                 onRejeitar = { onRejeitar(l) },
+                onEfetivar = { onEfetivar(l) },
                 onCategorizar = { onCategorizar(l, it) },
             )
         }
@@ -166,6 +189,7 @@ fun CartaoLancamento(
     onEditar: () -> Unit,
     onConfirmar: () -> Unit,
     onRejeitar: () -> Unit,
+    onEfetivar: () -> Unit,
     onCategorizar: (Categoria) -> Unit,
 ) {
     Card(
@@ -185,8 +209,10 @@ fun CartaoLancamento(
             ) {
                 Column(Modifier.weight(1f)) {
                     Text(l.descricao, style = MaterialTheme.typography.bodyLarge)
+                    val dataLocal = l.dataHora.atZone(ZoneId.systemDefault())
                     Text(
-                        FORMATO_DATA.format(l.dataHora.atZone(ZoneId.systemDefault())),
+                        if (l.status == Status.FUTURO) "Vence ${FORMATO_VENCIMENTO.format(dataLocal)}"
+                        else FORMATO_DATA.format(dataLocal),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -210,6 +236,12 @@ fun CartaoLancamento(
                 SeletorCategoria(l.categoria, onCategorizar)
                 if (l.status == Status.PENDENTE_REVISAO) {
                     TextButton(onClick = onConfirmar) { Text("Confirmar") }
+                    TextButton(onClick = onRejeitar) {
+                        Text("Rejeitar", color = MaterialTheme.colorScheme.error)
+                    }
+                }
+                if (l.status == Status.FUTURO) {
+                    TextButton(onClick = onEfetivar) { Text("Efetivar") }
                     TextButton(onClick = onRejeitar) {
                         Text("Rejeitar", color = MaterialTheme.colorScheme.error)
                     }

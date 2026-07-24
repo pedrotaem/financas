@@ -14,6 +14,9 @@ interface LancamentoDao {
     @Query("SELECT * FROM lancamentos WHERE id = :id")
     suspend fun buscar(id: String): LancamentoEntity?
 
+    @Query("SELECT * FROM lancamentos WHERE status = 'FUTURO'")
+    suspend fun buscarFuturos(): List<LancamentoEntity>
+
     @Upsert
     suspend fun salvar(e: LancamentoEntity)
 

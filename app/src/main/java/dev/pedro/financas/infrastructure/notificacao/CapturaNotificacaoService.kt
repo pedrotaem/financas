@@ -28,7 +28,8 @@ class CapturaNotificacaoService : NotificationListenerService() {
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         val pacote = sbn.packageName
         if (!pacote.startsWith(PREFIXO_ITAU)) {
-            // Debug p/ calibrar filtro de pacote (mitigação de risco da spec)
+            // Debug p/ calibrar filtro de pacote (mitigação de risco da spec).
+            // SMS não passa por aqui: spec 007 usa SmsReceiver dedicado.
             Log.d(TAG, "Ignorado: $pacote")
             return
         }

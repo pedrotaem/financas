@@ -17,6 +17,7 @@ class ResumoMensalTest {
         centavos: Long,
         instante: String = "2026-07-15T12:00:00Z",
         categoria: Categoria? = null,
+        status: Status = Status.PENDENTE_REVISAO,
     ) = Lancamento(
         id = LancamentoId.novo(),
         tipo = tipo,
@@ -25,6 +26,7 @@ class ResumoMensalTest {
         descricao = "teste",
         categoria = categoria,
         origem = Origem.MANUAL,
+        status = status,
     )
 
     @Test
@@ -72,6 +74,21 @@ class ResumoMensalTest {
             julho, zona,
         )
         assertEquals(200, r.despesas.centavos)
+    }
+
+    @Test
+    fun `lancamento futuro fica fora de todos os calculos`() {
+        // spec 007, regra 1: FUTURO não entra em saldo, despesas nem donut
+        val r = ResumoMensal.de(
+            listOf(
+                lancamento(Tipo.DEBITO, 200, categoria = Categoria.CASA),
+                lancamento(Tipo.DEBITO, 9_999, categoria = Categoria.CASA, status = Status.FUTURO),
+            ),
+            julho, zona,
+        )
+        assertEquals(200, r.despesas.centavos)
+        assertEquals(-200, r.saldoCentavos)
+        assertEquals(200, r.fatias.single().total.centavos)
     }
 
     @Test

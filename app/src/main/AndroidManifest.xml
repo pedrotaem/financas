@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Spec 007: captura de SMS de contas (Claro/Vivo) — permissão de runtime, concedida em Ajustes -->
+    <uses-permission android:name="android.permission.RECEIVE_SMS" />
+
     <application
         android:name=".FinancasApp"
         android:allowBackup="true"
@@ -18,6 +21,16 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Spec 007: receiver de SMS (contas Claro/Vivo) -->
+        <receiver
+            android:name=".infrastructure.sms.SmsReceiver"
+            android:exported="true"
+            android:permission="android.permission.BROADCAST_SMS">
+            <intent-filter>
+                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+            </intent-filter>
+        </receiver>
 
         <!-- Spec 001: listener de notificações (Itaú) -->
         <service

@@ -2,6 +2,7 @@ package dev.pedro.financas
 
 import android.app.Application
 import dev.pedro.financas.application.CapturarNotificacao
+import dev.pedro.financas.application.CapturarSms
 import dev.pedro.financas.domain.LancamentoRepository
 import dev.pedro.financas.domain.OrcamentoRepository
 import dev.pedro.financas.domain.captura.CapturaBrutaRepository
@@ -21,10 +22,18 @@ class AppContainer(app: Application) {
     val capturaBrutaRepository: CapturaBrutaRepository = RoomCapturaBrutaRepository(db.capturaBrutaDao())
     val orcamentoRepository: OrcamentoRepository = RoomOrcamentoRepository(db.orcamentoDao())
 
+    private val registroProcessamento = RoomRegistroProcessamento(db.processamentoDao())
+
     val capturarNotificacao = CapturarNotificacao(
         lancamentos = lancamentoRepository,
         capturasBrutas = capturaBrutaRepository,
-        processamentos = RoomRegistroProcessamento(db.processamentoDao()),
+        processamentos = registroProcessamento,
+    )
+
+    val capturarSms = CapturarSms(
+        lancamentos = lancamentoRepository,
+        capturasBrutas = capturaBrutaRepository,
+        processamentos = registroProcessamento,
     )
 }
 

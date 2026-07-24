@@ -127,6 +127,7 @@ fun AppFinancas(viewModel: FinancasViewModel) {
                     estado = estado,
                     onConfirmar = viewModel::confirmar,
                     onRejeitar = viewModel::rejeitar,
+                    onEfetivar = viewModel::efetivar,
                     onCategorizar = viewModel::categorizar,
                     onEditar = viewModel::editar,
                     onExcluir = viewModel::excluir,

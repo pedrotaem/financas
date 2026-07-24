@@ -22,7 +22,8 @@ data class ResumoMensal(
     companion object {
         fun de(lancamentos: List<Lancamento>, mes: YearMonth, zona: ZoneId): ResumoMensal {
             val doMes = lancamentos.filter {
-                YearMonth.from(it.dataHora.atZone(zona)) == mes
+                // FUTURO fica fora de todo cálculo presente (spec 007, regra 1)
+                it.status != Status.FUTURO && YearMonth.from(it.dataHora.atZone(zona)) == mes
             }
             val receitas = doMes.filter { it.tipo == Tipo.CREDITO }
                 .fold(Dinheiro.ZERO) { acc, l -> acc + l.valor }

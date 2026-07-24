@@ -12,9 +12,10 @@ value class LancamentoId(val valor: String) {
 
 enum class Tipo { DEBITO, CREDITO }
 
-enum class Origem { NOTIFICACAO_ITAU, NOTA_FISCAL, MANUAL }
+enum class Origem { NOTIFICACAO_ITAU, NOTIFICACAO_SMS, NOTA_FISCAL, MANUAL }
 
-enum class Status { PENDENTE_REVISAO, CONFIRMADO }
+/** FUTURO (spec 007): agendado, fora dos totais até ser efetivado. */
+enum class Status { PENDENTE_REVISAO, CONFIRMADO, FUTURO }
 
 enum class Categoria {
     MERCADO, RESTAURANTE, FARMACIA, TRANSPORTE, COMBUSTIVEL,
@@ -40,6 +41,9 @@ data class Lancamento(
     val textoOrigem: String? = null,
 ) {
     fun confirmar(): Lancamento = copy(status = Status.CONFIRMADO)
+
+    /** Futuro vira presente (spec 007, regra 3): entra nos totais e no fluxo de revisão. */
+    fun efetivar(): Lancamento = copy(status = Status.PENDENTE_REVISAO)
 
     fun categorizar(categoria: Categoria): Lancamento = copy(categoria = categoria)
 }

@@ -39,6 +39,8 @@ data class EstadoUi(
     val saldoOculto: Boolean = false,
     /** Real × planejado do mês selecionado (spec 006). */
     val progressoOrcamento: ProgressoOrcamento = ProgressoOrcamento(emptyList(), Dinheiro.ZERO, Dinheiro.ZERO),
+    /** Agendados, fora dos totais (spec 007); todas as datas, ordenados por vencimento. */
+    val lancamentosFuturos: List<Lancamento> = emptyList(),
 )
 
 class FinancasViewModel(
@@ -61,7 +63,7 @@ class FinancasViewModel(
         orcamentoRepo.observarTodos(),
     ) { lancamentos, capturas, mes, saldoOculto, orcamentos ->
         val doMes = lancamentos
-            .filter { YearMonth.from(it.dataHora.atZone(zona)) == mes }
+            .filter { it.status != Status.FUTURO && YearMonth.from(it.dataHora.atZone(zona)) == mes }
         val resumo = ResumoMensal.de(lancamentos, mes, zona)
         EstadoUi(
             mes = mes,
@@ -71,6 +73,9 @@ class FinancasViewModel(
             qtdPendentes = doMes.count { it.status == Status.PENDENTE_REVISAO } + capturas.size,
             saldoOculto = saldoOculto,
             progressoOrcamento = ProgressoOrcamento.de(orcamentos, resumo.fatias),
+            lancamentosFuturos = lancamentos
+                .filter { it.status == Status.FUTURO }
+                .sortedBy { it.dataHora },
         )
     }.stateIn(
         viewModelScope,
@@ -95,6 +100,9 @@ class FinancasViewModel(
     fun mesSeguinte() = mesSelecionado.update { it.plusMonths(1) }
 
     fun confirmar(l: Lancamento) = viewModelScope.launch { lancamentoRepo.salvar(l.confirmar()) }
+
+    /** Futuro → presente manualmente (spec 007, fallback do SMS de confirmação). */
+    fun efetivar(l: Lancamento) = viewModelScope.launch { lancamentoRepo.salvar(l.efetivar()) }
 
     /** Exclusão definitiva; dedup impede recaptura (spec 004, regra 1). */
     fun excluir(l: Lancamento) = viewModelScope.launch { lancamentoRepo.excluir(l.id) }

@@ -9,6 +9,8 @@ import kotlinx.coroutines.flow.Flow
 interface LancamentoRepository {
     fun observarTodos(): Flow<List<Lancamento>>
     suspend fun buscar(id: LancamentoId): Lancamento?
+    /** Lançamentos com status FUTURO (spec 007). */
+    suspend fun buscarFuturos(): List<Lancamento>
     suspend fun salvar(lancamento: Lancamento)
     suspend fun excluir(id: LancamentoId)
 }
