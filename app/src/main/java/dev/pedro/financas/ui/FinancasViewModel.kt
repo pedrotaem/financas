@@ -15,6 +15,7 @@ import dev.pedro.financas.domain.Status
 import dev.pedro.financas.domain.Tipo
 import dev.pedro.financas.domain.captura.CapturaBruta
 import dev.pedro.financas.domain.captura.CapturaBrutaRepository
+import dev.pedro.financas.infrastructure.preferencias.PreferenciasApp
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -31,21 +32,27 @@ data class EstadoUi(
     val lancamentosDoMes: List<Lancamento>,
     val capturasPendentes: List<CapturaBruta>,
     val qtdPendentes: Int,
+    /** Spec 005, regra 3: cobre todo valor monetário renderizado. */
+    val saldoOculto: Boolean = false,
 )
 
 class FinancasViewModel(
     private val lancamentoRepo: LancamentoRepository,
-    capturaBrutaRepo: CapturaBrutaRepository,
+    private val capturaBrutaRepo: CapturaBrutaRepository,
+    private val preferencias: PreferenciasApp,
 ) : ViewModel() {
 
     private val zona: ZoneId = ZoneId.systemDefault()
     private val mesSelecionado = MutableStateFlow(YearMonth.now(zona))
 
+    val temaOled: StateFlow<Boolean> = preferencias.temaOled
+
     val estado: StateFlow<EstadoUi> = combine(
         lancamentoRepo.observarTodos(),
         capturaBrutaRepo.observarPendentes(),
         mesSelecionado,
-    ) { lancamentos, capturas, mes ->
+        preferencias.saldoOculto,
+    ) { lancamentos, capturas, mes, saldoOculto ->
         val doMes = lancamentos
             .filter { YearMonth.from(it.dataHora.atZone(zona)) == mes }
         EstadoUi(
@@ -54,6 +61,7 @@ class FinancasViewModel(
             lancamentosDoMes = doMes,
             capturasPendentes = capturas,
             qtdPendentes = doMes.count { it.status == Status.PENDENTE_REVISAO } + capturas.size,
+            saldoOculto = saldoOculto,
         )
     }.stateIn(
         viewModelScope,
@@ -61,10 +69,52 @@ class FinancasViewModel(
         EstadoUi(YearMonth.now(zona), ResumoMensal.de(emptyList(), YearMonth.now(zona), zona), emptyList(), emptyList(), 0),
     )
 
+    fun alternarSaldoOculto() = preferencias.alternarSaldoOculto()
+    fun alternarTemaOled() = preferencias.alternarTemaOled()
+
     fun mesAnterior() = mesSelecionado.update { it.minusMonths(1) }
     fun mesSeguinte() = mesSelecionado.update { it.plusMonths(1) }
 
     fun confirmar(l: Lancamento) = viewModelScope.launch { lancamentoRepo.salvar(l.confirmar()) }
+
+    /** Spec 004, regra 1: exclusão definitiva; dedup impede recaptura. */
+    fun rejeitar(l: Lancamento) = viewModelScope.launch { lancamentoRepo.excluir(l.id) }
+
+    /** Spec 004, regra 2: edição preserva id, dataHora, origem, status e auditoria. */
+    fun editar(original: Lancamento, tipo: Tipo, valorCentavos: Long, descricao: String, categoria: Categoria?) =
+        viewModelScope.launch {
+            lancamentoRepo.salvar(
+                original.copy(
+                    tipo = tipo,
+                    valor = Dinheiro(valorCentavos),
+                    descricao = descricao,
+                    categoria = categoria,
+                )
+            )
+        }
+
+    /** Spec 004, regra 4: some da fila, mas fica no banco para auditoria. */
+    fun descartarCaptura(c: CapturaBruta) =
+        viewModelScope.launch { capturaBrutaRepo.salvar(c.processar()) }
+
+    /** Spec 004, regra 3: cria o lançamento e tira a captura da fila na mesma operação. */
+    fun adicionarDeCaptura(c: CapturaBruta, tipo: Tipo, valorCentavos: Long, descricao: String, categoria: Categoria?) =
+        viewModelScope.launch {
+            lancamentoRepo.salvar(
+                Lancamento(
+                    id = LancamentoId.novo(),
+                    tipo = tipo,
+                    valor = Dinheiro(valorCentavos),
+                    dataHora = c.dataHora,
+                    descricao = descricao,
+                    categoria = categoria,
+                    origem = Origem.NOTIFICACAO_ITAU,
+                    status = Status.CONFIRMADO,
+                    textoOrigem = c.texto,
+                )
+            )
+            capturaBrutaRepo.salvar(c.processar())
+        }
 
     fun categorizar(l: Lancamento, categoria: Categoria) =
         viewModelScope.launch { lancamentoRepo.salvar(l.categorizar(categoria)) }
@@ -93,7 +143,11 @@ class FinancasViewModel(
         fun factory(container: AppContainer) = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                FinancasViewModel(container.lancamentoRepository, container.capturaBrutaRepository) as T
+                FinancasViewModel(
+                    container.lancamentoRepository,
+                    container.capturaBrutaRepository,
+                    container.preferencias,
+                ) as T
         }
     }
 }

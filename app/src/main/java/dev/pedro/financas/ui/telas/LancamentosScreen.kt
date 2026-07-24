@@ -1,5 +1,6 @@
 package dev.pedro.financas.ui.telas
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,6 +12,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
@@ -30,6 +32,9 @@ import dev.pedro.financas.domain.Status
 import dev.pedro.financas.domain.Tipo
 import dev.pedro.financas.domain.captura.CapturaBruta
 import dev.pedro.financas.ui.EstadoUi
+import dev.pedro.financas.ui.componentes.EstadoVazio
+import dev.pedro.financas.ui.componentes.exibirValor
+import dev.pedro.financas.ui.componentes.mascararValoresNoTexto
 import dev.pedro.financas.ui.componentes.rotulo
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -40,8 +45,15 @@ private val FORMATO_DATA = DateTimeFormatter.ofPattern("dd/MM HH:mm")
 fun LancamentosScreen(
     estado: EstadoUi,
     onConfirmar: (Lancamento) -> Unit,
+    onRejeitar: (Lancamento) -> Unit,
     onCategorizar: (Lancamento, Categoria) -> Unit,
+    onEditar: (Lancamento, Tipo, Long, String, Categoria?) -> Unit,
+    onDescartarCaptura: (CapturaBruta) -> Unit,
+    onAdicionarDeCaptura: (CapturaBruta, Tipo, Long, String, Categoria?) -> Unit,
 ) {
+    var emEdicao by remember { mutableStateOf<Lancamento?>(null) }
+    var emConversao by remember { mutableStateOf<CapturaBruta?>(null) }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -55,24 +67,69 @@ fun LancamentosScreen(
                     style = MaterialTheme.typography.titleMedium,
                 )
             }
-            items(estado.capturasPendentes, key = { it.id.valor }) { CartaoCapturaBruta(it) }
+            items(estado.capturasPendentes, key = { it.id.valor }) { c ->
+                CartaoCapturaBruta(
+                    c,
+                    oculto = estado.saldoOculto,
+                    onDescartar = { onDescartarCaptura(c) },
+                    onAdicionar = { emConversao = c },
+                )
+            }
         }
 
         item { Text("Lançamentos do mês", style = MaterialTheme.typography.titleMedium) }
 
         if (estado.lancamentosDoMes.isEmpty()) {
             item {
-                Text("Nenhum lançamento neste mês.", style = MaterialTheme.typography.bodyMedium)
+                EstadoVazio(
+                    "Nenhum lançamento neste mês.",
+                    "Toque em + para adicionar",
+                )
             }
         }
         items(estado.lancamentosDoMes, key = { it.id.valor }) { l ->
-            CartaoLancamento(l, onConfirmar = { onConfirmar(l) }, onCategorizar = { onCategorizar(l, it) })
+            CartaoLancamento(
+                l,
+                oculto = estado.saldoOculto,
+                onEditar = { emEdicao = l },
+                onConfirmar = { onConfirmar(l) },
+                onRejeitar = { onRejeitar(l) },
+                onCategorizar = { onCategorizar(l, it) },
+            )
         }
+    }
+
+    emEdicao?.let { l ->
+        LancamentoDialog(
+            titulo = "Editar lançamento",
+            tipoInicial = l.tipo,
+            valorInicial = valorParaTexto(l.valor),
+            descricaoInicial = l.descricao,
+            categoriaInicial = l.categoria,
+            onDismiss = { emEdicao = null },
+            onSalvar = { tipo, centavos, descricao, categoria ->
+                onEditar(l, tipo, centavos, descricao, categoria)
+                emEdicao = null
+            },
+        )
+    }
+
+    emConversao?.let { c ->
+        LancamentoDialog(
+            titulo = "Adicionar lançamento",
+            valorInicial = c.valorDetectado?.let { valorParaTexto(it) } ?: "",
+            descricaoInicial = c.titulo.orEmpty(),
+            onDismiss = { emConversao = null },
+            onSalvar = { tipo, centavos, descricao, categoria ->
+                onAdicionarDeCaptura(c, tipo, centavos, descricao, categoria)
+                emConversao = null
+            },
+        )
     }
 }
 
 @Composable
-fun LinhaLancamentoSimples(l: Lancamento) {
+fun LinhaLancamentoSimples(l: Lancamento, oculto: Boolean = false) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -84,17 +141,15 @@ fun LinhaLancamentoSimples(l: Lancamento) {
             Text(l.descricao, style = MaterialTheme.typography.bodyMedium, maxLines = 1)
             Text(
                 FORMATO_DATA.format(l.dataHora.atZone(ZoneId.systemDefault())),
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         val sinal = if (l.tipo == Tipo.DEBITO) "-" else "+"
+        // Texto pequeno: sem cor de acento (spec 005, regra 2) — o sinal carrega a semântica.
         Text(
-            "$sinal${l.valor.formatado()}",
+            exibirValor("$sinal${l.valor.formatado()}", oculto),
             style = MaterialTheme.typography.bodyMedium,
-            color = if (l.tipo == Tipo.DEBITO)
-                MaterialTheme.colorScheme.error
-            else
-                MaterialTheme.colorScheme.primary,
         )
     }
 }
@@ -102,10 +157,21 @@ fun LinhaLancamentoSimples(l: Lancamento) {
 @Composable
 fun CartaoLancamento(
     l: Lancamento,
+    oculto: Boolean,
+    onEditar: () -> Unit,
     onConfirmar: () -> Unit,
+    onRejeitar: () -> Unit,
     onCategorizar: (Categoria) -> Unit,
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onEditar),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        ),
+    ) {
         Column(Modifier.padding(12.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -116,17 +182,19 @@ fun CartaoLancamento(
                     Text(l.descricao, style = MaterialTheme.typography.bodyLarge)
                     Text(
                         FORMATO_DATA.format(l.dataHora.atZone(ZoneId.systemDefault())),
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 val sinal = if (l.tipo == Tipo.DEBITO) "-" else "+"
                 Text(
-                    "$sinal${l.valor.formatado()}",
+                    exibirValor("$sinal${l.valor.formatado()}", oculto),
                     style = MaterialTheme.typography.bodyLarge,
-                    color = if (l.tipo == Tipo.DEBITO)
-                        MaterialTheme.colorScheme.error
-                    else
-                        MaterialTheme.colorScheme.primary,
+                    color = when {
+                        oculto -> MaterialTheme.colorScheme.onSurface
+                        l.tipo == Tipo.DEBITO -> MaterialTheme.colorScheme.error
+                        else -> MaterialTheme.colorScheme.primary
+                    },
                 )
             }
             Row(
@@ -137,6 +205,9 @@ fun CartaoLancamento(
                 SeletorCategoria(l.categoria, onCategorizar)
                 if (l.status == Status.PENDENTE_REVISAO) {
                     TextButton(onClick = onConfirmar) { Text("Confirmar") }
+                    TextButton(onClick = onRejeitar) {
+                        Text("Rejeitar", color = MaterialTheme.colorScheme.error)
+                    }
                 }
             }
         }
@@ -166,14 +237,39 @@ private fun SeletorCategoria(atual: Categoria?, onEscolher: (Categoria) -> Unit)
 }
 
 @Composable
-fun CartaoCapturaBruta(c: CapturaBruta) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+fun CartaoCapturaBruta(
+    c: CapturaBruta,
+    oculto: Boolean,
+    onDescartar: () -> Unit,
+    onAdicionar: () -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        ),
+    ) {
         Column(Modifier.padding(12.dp)) {
             Text(
-                c.valorDetectado?.formatado() ?: "Valor não detectado",
+                c.valorDetectado?.let { exibirValor(it.formatado(), oculto) } ?: "Valor não detectado",
                 style = MaterialTheme.typography.bodyLarge,
             )
-            Text(c.texto, style = MaterialTheme.typography.bodySmall, maxLines = 3)
+            Text(
+                if (oculto) mascararValoresNoTexto(c.texto) else c.texto,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 3,
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                TextButton(onClick = onAdicionar) { Text("Adicionar") }
+                TextButton(onClick = onDescartar) {
+                    Text("Descartar", color = MaterialTheme.colorScheme.error)
+                }
+            }
         }
     }
 }

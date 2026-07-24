@@ -22,19 +22,32 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import dev.pedro.financas.domain.Categoria
+import dev.pedro.financas.domain.Dinheiro
 import dev.pedro.financas.domain.Tipo
 import dev.pedro.financas.ui.componentes.rotulo
 import dev.pedro.financas.ui.parseValorParaCentavos
 
+/** Centavos → "54,90" (formato de digitação do campo valor). */
+fun valorParaTexto(d: Dinheiro): String = "%d,%02d".format(d.centavos / 100, d.centavos % 100)
+
+/**
+ * Diálogo de criação/edição de lançamento (specs 003 e 004).
+ * Em branco no FAB; pré-preenchido ao editar ou converter captura.
+ */
 @Composable
-fun AdicionarLancamentoDialog(
+fun LancamentoDialog(
+    titulo: String,
     onDismiss: () -> Unit,
     onSalvar: (Tipo, Long, String, Categoria?) -> Unit,
+    tipoInicial: Tipo = Tipo.DEBITO,
+    valorInicial: String = "",
+    descricaoInicial: String = "",
+    categoriaInicial: Categoria? = null,
 ) {
-    var tipo by remember { mutableStateOf(Tipo.DEBITO) }
-    var valorTexto by remember { mutableStateOf("") }
-    var descricao by remember { mutableStateOf("") }
-    var categoria by remember { mutableStateOf<Categoria?>(null) }
+    var tipo by remember { mutableStateOf(tipoInicial) }
+    var valorTexto by remember { mutableStateOf(valorInicial) }
+    var descricao by remember { mutableStateOf(descricaoInicial) }
+    var categoria by remember { mutableStateOf(categoriaInicial) }
     var categoriaAberta by remember { mutableStateOf(false) }
 
     val valorCentavos = parseValorParaCentavos(valorTexto)
@@ -42,7 +55,7 @@ fun AdicionarLancamentoDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Novo lançamento") },
+        title = { Text(titulo) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {

@@ -5,6 +5,7 @@ import dev.pedro.financas.application.CapturarNotificacao
 import dev.pedro.financas.domain.LancamentoRepository
 import dev.pedro.financas.domain.captura.CapturaBrutaRepository
 import dev.pedro.financas.infrastructure.persistencia.FinancasDatabase
+import dev.pedro.financas.infrastructure.preferencias.PreferenciasApp
 import dev.pedro.financas.infrastructure.persistencia.RoomCapturaBrutaRepository
 import dev.pedro.financas.infrastructure.persistencia.RoomLancamentoRepository
 import dev.pedro.financas.infrastructure.persistencia.RoomRegistroProcessamento
@@ -13,6 +14,7 @@ import dev.pedro.financas.infrastructure.persistencia.RoomRegistroProcessamento
 class AppContainer(app: Application) {
     private val db = FinancasDatabase.criar(app)
 
+    val preferencias = PreferenciasApp(app)
     val lancamentoRepository: LancamentoRepository = RoomLancamentoRepository(db.lancamentoDao())
     val capturaBrutaRepository: CapturaBrutaRepository = RoomCapturaBrutaRepository(db.capturaBrutaDao())
 

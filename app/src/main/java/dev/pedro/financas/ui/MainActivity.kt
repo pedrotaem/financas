@@ -31,8 +31,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import dev.pedro.financas.FinancasApp
-import dev.pedro.financas.ui.telas.AdicionarLancamentoDialog
 import dev.pedro.financas.ui.telas.AjustesScreen
+import dev.pedro.financas.ui.telas.LancamentoDialog
 import dev.pedro.financas.ui.telas.DashboardScreen
 import dev.pedro.financas.ui.telas.LancamentosScreen
 import dev.pedro.financas.ui.theme.FinancasTheme
@@ -55,7 +55,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            FinancasTheme {
+            val temaOled by viewModel.temaOled.collectAsState()
+            FinancasTheme(oledPreto = temaOled) {
                 AppFinancas(viewModel)
             }
         }
@@ -109,21 +110,33 @@ fun AppFinancas(viewModel: FinancasViewModel) {
                     onMesAnterior = viewModel::mesAnterior,
                     onMesSeguinte = viewModel::mesSeguinte,
                     onVerPendencias = { navController.navigate("lancamentos") },
+                    onAlternarSaldoOculto = viewModel::alternarSaldoOculto,
                 )
             }
             composable("lancamentos") {
                 LancamentosScreen(
                     estado = estado,
                     onConfirmar = viewModel::confirmar,
+                    onRejeitar = viewModel::rejeitar,
                     onCategorizar = viewModel::categorizar,
+                    onEditar = viewModel::editar,
+                    onDescartarCaptura = viewModel::descartarCaptura,
+                    onAdicionarDeCaptura = viewModel::adicionarDeCaptura,
                 )
             }
-            composable("ajustes") { AjustesScreen() }
+            composable("ajustes") {
+                val temaOled by viewModel.temaOled.collectAsState()
+                AjustesScreen(
+                    temaOled = temaOled,
+                    onAlternarTemaOled = viewModel::alternarTemaOled,
+                )
+            }
         }
     }
 
     if (dialogoAberto) {
-        AdicionarLancamentoDialog(
+        LancamentoDialog(
+            titulo = "Novo lançamento",
             onDismiss = { dialogoAberto = false },
             onSalvar = { tipo, centavos, descricao, categoria ->
                 viewModel.adicionarManual(tipo, centavos, descricao, categoria)

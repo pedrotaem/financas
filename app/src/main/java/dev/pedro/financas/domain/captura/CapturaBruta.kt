@@ -24,7 +24,10 @@ data class CapturaBruta(
     val valorDetectado: Dinheiro?,
     val dataHora: Instant,
     val processada: Boolean = false,
-)
+) {
+    /** Sai da fila de pendências (descartada ou convertida em Lançamento, spec 004). */
+    fun processar(): CapturaBruta = copy(processada = true)
+}
 
 interface CapturaBrutaRepository {
     fun observarPendentes(): Flow<List<CapturaBruta>>
