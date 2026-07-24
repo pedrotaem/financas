@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import dev.pedro.financas.domain.Categoria
 import dev.pedro.financas.domain.Lancamento
+import dev.pedro.financas.domain.Origem
 import dev.pedro.financas.domain.Status
 import dev.pedro.financas.domain.Tipo
 import dev.pedro.financas.domain.captura.CapturaBruta
@@ -41,6 +42,20 @@ import java.time.format.DateTimeFormatter
 
 private val FORMATO_DATA = DateTimeFormatter.ofPattern("dd/MM HH:mm")
 private val FORMATO_VENCIMENTO = DateTimeFormatter.ofPattern("dd/MM")
+private val FORMATO_CRIACAO = DateTimeFormatter.ofPattern("dd/MM/yyyy 'às' HH:mm")
+
+/**
+ * Texto de origem no diálogo de edição (spec 004): notificação/SMS na íntegra
+ * quando existe; senão, quando e como o lançamento foi criado.
+ */
+fun infoOrigem(l: Lancamento): String {
+    l.textoOrigem?.takeIf { it.isNotBlank() }?.let { return it }
+    val quando = FORMATO_CRIACAO.format(l.dataHora.atZone(ZoneId.systemDefault()))
+    return when (l.origem) {
+        Origem.MANUAL -> "Criado manualmente em $quando"
+        else -> "Capturado automaticamente em $quando"
+    }
+}
 
 @Composable
 fun LancamentosScreen(
@@ -139,6 +154,7 @@ fun LancamentosScreen(
                 onExcluir(l)
                 emEdicao = null
             },
+            infoOrigem = infoOrigem(l),
         )
     }
 
@@ -152,6 +168,7 @@ fun LancamentosScreen(
                 onAdicionarDeCaptura(c, tipo, centavos, descricao, categoria)
                 emConversao = null
             },
+            infoOrigem = c.texto,
         )
     }
 }

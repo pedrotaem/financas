@@ -47,6 +47,8 @@ fun LancamentoDialog(
     categoriaInicial: Categoria? = null,
     /** Exibe o botão Excluir (edição de lançamento existente). */
     onExcluir: (() -> Unit)? = null,
+    /** Texto integral da notificação de origem, ou descrição da criação manual. */
+    infoOrigem: String? = null,
 ) {
     var tipo by remember { mutableStateOf(tipoInicial) }
     var valorTexto by remember { mutableStateOf(valorInicial) }
@@ -106,6 +108,20 @@ fun LancamentoDialog(
                                 },
                             )
                         }
+                    }
+                }
+                infoOrigem?.let {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(
+                            "Origem",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            it,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                 }
             }
