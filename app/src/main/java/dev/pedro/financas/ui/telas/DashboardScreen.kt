@@ -30,8 +30,10 @@ import dev.pedro.financas.ui.EstadoUi
 import dev.pedro.financas.ui.componentes.EstadoVazio
 import dev.pedro.financas.ui.componentes.GraficoDonut
 import dev.pedro.financas.ui.componentes.exibirValor
+import dev.pedro.financas.ui.componentes.rotulo
 import java.time.format.TextStyle
 import java.util.Locale
+import kotlin.math.roundToInt
 
 @Composable
 fun DashboardScreen(
@@ -40,6 +42,7 @@ fun DashboardScreen(
     onMesSeguinte: () -> Unit,
     onVerPendencias: () -> Unit,
     onAlternarSaldoOculto: () -> Unit,
+    onVerOrcamento: () -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier
@@ -70,6 +73,8 @@ fun DashboardScreen(
                 }
             }
         }
+
+        item { CardOrcamento(estado, onVerOrcamento) }
 
         if (estado.resumo.fatias.isNotEmpty()) {
             item {
@@ -123,6 +128,68 @@ private fun SeletorMes(estado: EstadoUi, onAnterior: () -> Unit, onSeguinte: () 
         Text("$nomeMes ${estado.mes.year}", style = MaterialTheme.typography.titleMedium)
         IconButton(onClick = onSeguinte) {
             Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Mês seguinte")
+        }
+    }
+}
+
+/** Card orçamento (spec 006): resumo real × planejado, toque → tela Orçamento. */
+@Composable
+private fun CardOrcamento(estado: EstadoUi, onVerOrcamento: () -> Unit) {
+    val progresso = estado.progressoOrcamento
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onVerOrcamento),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        ),
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("Orçamento", style = MaterialTheme.typography.titleMedium)
+                if (progresso.categorias.isNotEmpty()) {
+                    Text(
+                        "${exibirValor(progresso.totalGasto.formatado(), estado.saldoOculto)} de " +
+                            exibirValor(progresso.totalPlanejado.formatado(), estado.saldoOculto),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            if (progresso.categorias.isEmpty()) {
+                Text(
+                    "Defina metas de gasto por categoria — toque para configurar",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                val fracaoTotal = if (progresso.totalPlanejado.centavos == 0L) 0f
+                else progresso.totalGasto.centavos.toFloat() / progresso.totalPlanejado.centavos
+                BarraOrcamento(fracaoTotal)
+                progresso.categorias.take(3).forEach { p ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            p.categoria.rotulo(),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            "${(p.fracao * 100).roundToInt()}%",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = corProgresso(p.fracao),
+                        )
+                    }
+                }
+            }
         }
     }
 }

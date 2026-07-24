@@ -35,6 +35,7 @@ import dev.pedro.financas.ui.telas.AjustesScreen
 import dev.pedro.financas.ui.telas.LancamentoDialog
 import dev.pedro.financas.ui.telas.DashboardScreen
 import dev.pedro.financas.ui.telas.LancamentosScreen
+import dev.pedro.financas.ui.telas.OrcamentoScreen
 import dev.pedro.financas.ui.theme.FinancasTheme
 
 private data class Aba(val rota: String, val titulo: String, val icone: ImageVector)
@@ -92,7 +93,7 @@ fun AppFinancas(viewModel: FinancasViewModel) {
             }
         },
         floatingActionButton = {
-            if (rotaAtual != "ajustes") {
+            if (rotaAtual != "ajustes" && rotaAtual != "orcamento") {
                 FloatingActionButton(onClick = { dialogoAberto = true }) {
                     Icon(Icons.Filled.Add, contentDescription = "Novo lançamento")
                 }
@@ -111,6 +112,14 @@ fun AppFinancas(viewModel: FinancasViewModel) {
                     onMesSeguinte = viewModel::mesSeguinte,
                     onVerPendencias = { navController.navigate("lancamentos") },
                     onAlternarSaldoOculto = viewModel::alternarSaldoOculto,
+                    onVerOrcamento = { navController.navigate("orcamento") },
+                )
+            }
+            composable("orcamento") {
+                OrcamentoScreen(
+                    estado = estado,
+                    onDefinir = viewModel::definirOrcamento,
+                    onRemover = viewModel::removerOrcamento,
                 )
             }
             composable("lancamentos") {

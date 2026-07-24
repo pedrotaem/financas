@@ -9,7 +9,10 @@ import dev.pedro.financas.domain.Dinheiro
 import dev.pedro.financas.domain.Lancamento
 import dev.pedro.financas.domain.LancamentoId
 import dev.pedro.financas.domain.LancamentoRepository
+import dev.pedro.financas.domain.OrcamentoCategoria
+import dev.pedro.financas.domain.OrcamentoRepository
 import dev.pedro.financas.domain.Origem
+import dev.pedro.financas.domain.ProgressoOrcamento
 import dev.pedro.financas.domain.ResumoMensal
 import dev.pedro.financas.domain.Status
 import dev.pedro.financas.domain.Tipo
@@ -34,12 +37,15 @@ data class EstadoUi(
     val qtdPendentes: Int,
     /** Spec 005, regra 3: cobre todo valor monetário renderizado. */
     val saldoOculto: Boolean = false,
+    /** Real × planejado do mês selecionado (spec 006). */
+    val progressoOrcamento: ProgressoOrcamento = ProgressoOrcamento(emptyList(), Dinheiro.ZERO, Dinheiro.ZERO),
 )
 
 class FinancasViewModel(
     private val lancamentoRepo: LancamentoRepository,
     private val capturaBrutaRepo: CapturaBrutaRepository,
     private val preferencias: PreferenciasApp,
+    private val orcamentoRepo: OrcamentoRepository,
 ) : ViewModel() {
 
     private val zona: ZoneId = ZoneId.systemDefault()
@@ -52,16 +58,19 @@ class FinancasViewModel(
         capturaBrutaRepo.observarPendentes(),
         mesSelecionado,
         preferencias.saldoOculto,
-    ) { lancamentos, capturas, mes, saldoOculto ->
+        orcamentoRepo.observarTodos(),
+    ) { lancamentos, capturas, mes, saldoOculto, orcamentos ->
         val doMes = lancamentos
             .filter { YearMonth.from(it.dataHora.atZone(zona)) == mes }
+        val resumo = ResumoMensal.de(lancamentos, mes, zona)
         EstadoUi(
             mes = mes,
-            resumo = ResumoMensal.de(lancamentos, mes, zona),
+            resumo = resumo,
             lancamentosDoMes = doMes,
             capturasPendentes = capturas,
             qtdPendentes = doMes.count { it.status == Status.PENDENTE_REVISAO } + capturas.size,
             saldoOculto = saldoOculto,
+            progressoOrcamento = ProgressoOrcamento.de(orcamentos, resumo.fatias),
         )
     }.stateIn(
         viewModelScope,
@@ -71,6 +80,16 @@ class FinancasViewModel(
 
     fun alternarSaldoOculto() = preferencias.alternarSaldoOculto()
     fun alternarTemaOled() = preferencias.alternarTemaOled()
+
+    /** Spec 006: valor zero remove o orçamento da categoria. */
+    fun definirOrcamento(categoria: Categoria, valorCentavos: Long) = viewModelScope.launch {
+        if (valorCentavos <= 0L) orcamentoRepo.remover(categoria)
+        else orcamentoRepo.definir(OrcamentoCategoria(categoria, Dinheiro(valorCentavos)))
+    }
+
+    fun removerOrcamento(categoria: Categoria) = viewModelScope.launch {
+        orcamentoRepo.remover(categoria)
+    }
 
     fun mesAnterior() = mesSelecionado.update { it.minusMonths(1) }
     fun mesSeguinte() = mesSelecionado.update { it.plusMonths(1) }
@@ -149,6 +168,7 @@ class FinancasViewModel(
                     container.lancamentoRepository,
                     container.capturaBrutaRepository,
                     container.preferencias,
+                    container.orcamentoRepository,
                 ) as T
         }
     }

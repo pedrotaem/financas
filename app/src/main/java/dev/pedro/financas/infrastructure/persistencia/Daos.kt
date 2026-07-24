@@ -31,6 +31,18 @@ interface CapturaBrutaDao {
 }
 
 @Dao
+interface OrcamentoDao {
+    @Query("SELECT * FROM orcamentos")
+    fun observarTodos(): Flow<List<OrcamentoEntity>>
+
+    @Upsert
+    suspend fun salvar(e: OrcamentoEntity)
+
+    @Query("DELETE FROM orcamentos WHERE categoria = :categoria")
+    suspend fun excluir(categoria: String)
+}
+
+@Dao
 interface ProcessamentoDao {
     @Query("SELECT COUNT(*) FROM processamentos WHERE hash = :hash AND emEpochMs > :desdeEpochMs")
     suspend fun contarRecentes(hash: String, desdeEpochMs: Long): Int

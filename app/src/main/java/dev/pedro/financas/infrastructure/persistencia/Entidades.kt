@@ -7,6 +7,7 @@ import dev.pedro.financas.domain.Dinheiro
 import dev.pedro.financas.domain.Lancamento
 import dev.pedro.financas.domain.LancamentoId
 import dev.pedro.financas.domain.NotaFiscalId
+import dev.pedro.financas.domain.OrcamentoCategoria
 import dev.pedro.financas.domain.Origem
 import dev.pedro.financas.domain.Status
 import dev.pedro.financas.domain.Tipo
@@ -98,3 +99,22 @@ data class ProcessamentoEntity(
     @PrimaryKey val hash: String,
     val emEpochMs: Long,
 )
+
+/** Orçamento mensal recorrente por categoria (spec 006). */
+@Entity(tableName = "orcamentos")
+data class OrcamentoEntity(
+    @PrimaryKey val categoria: String,
+    val valorCentavos: Long,
+) {
+    fun paraDominio() = OrcamentoCategoria(
+        categoria = Categoria.valueOf(categoria),
+        valor = Dinheiro(valorCentavos),
+    )
+
+    companion object {
+        fun de(o: OrcamentoCategoria) = OrcamentoEntity(
+            categoria = o.categoria.name,
+            valorCentavos = o.valor.centavos,
+        )
+    }
+}
